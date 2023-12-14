@@ -1,0 +1,174 @@
+
+package org.example;
+
+public interface Department {
+    void displayInfo();
+}
+
+
+package org.example;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class EmployeeDepartment implements Department {
+    private Employee employee;
+
+
+    public EmployeeDepartment(@Autowired Employee employee) {
+        this.employee = employee;
+    }
+
+    @Override
+    public void displayInfo() {
+        System.out.println("Employee Department:");
+        System.out.println("Employee Name: " + employee.getName());
+        System.out.println("Employee Role: " + employee.getRole());
+    }
+
+
+    @Autowired
+    public void setEmployee(Employee employee) {
+        this.employee = employee;
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("Employee Department bean is being initialized.");
+    }
+
+    @PreDestroy
+    public void destroy() {
+        System.out.println("Employee Department bean is being destroyed.");
+    }
+}
+
+package org.example;
+
+public interface Employee {
+    String getName();
+    String getRole();
+}
+
+package org.example;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+public class Developer implements Employee {
+    @Value("${employee.name}")
+    private String name;
+
+    @Value("${employee.role}")
+    private String role;
+
+    /
+    public Developer() {
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getRole() {
+        return role;
+    }
+
+
+    @Value("${employee.name}")
+    public void setName(String name) {
+        this.name = name;
+    }
+
+
+    @Value("${employee.role}")
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    @PostConstruct
+    public void init() {
+        System.out.println("Developer bean is being initialized.");
+    }
+
+    @PreDestroy
+    public void destroy() {
+        System.out.println("Developer bean is being destroyed.");
+    }
+}
+
+
+
+package org.example;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class Company {
+    private Department department;
+
+
+    @Autowired
+    public Company(Department department) {
+        this.department = department;
+    }
+
+    public void displayInfo() {
+        System.out.println("Company Information:");
+        department.displayInfo();
+    }
+
+
+    @Autowired
+    public void setDepartment(Department department) {
+        this.department = department;
+    }
+}
+
+
+
+package org.example;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+
+@Configuration
+@ComponentScan(basePackages = "org.example")
+@PropertySource("classpath:application.properties")
+public class AppConfig {
+
+    @Bean(initMethod = "init", destroyMethod = "destroy")
+    public Company company(@Autowired Department department) {
+        return new Company(department);
+    }
+
+    public static void main(String... args) {
+        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class);
+
+        Company company = context.getBean(Company.class);
+        company.displayInfo();
+
+
+        Developer developer = context.getBean(Developer.class);
+        developer.setName("Illya");
+        developer.setRole("Senior Software Developer");
+
+
+        EmployeeDepartment employeeDepartment = context.getBean(EmployeeDepartment.class);
+        employeeDepartment.setEmployee(developer);
+
+
+        company.displayInfo();
+
+        context.close();
+    }
+}
+
